@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<style>
+.horizontalBlock{
+	display: inline-block;
+)
+</style>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute vec4 vPosition;
+attribute vec3 normal;
+attribute vec2 texCoord;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 normalMatrix;
+
+varying vec3 normalInterp;
+varying vec3 vertPos;
+varying highp vec2 vTexCoord;
+
+void
+main()
+{
+	vec4 vertPos4 = modelViewMatrix * vPosition;
+	vertPos = vec3(vertPos4) / vertPos4.w;
+	normalInterp = mat3(normalMatrix) * normal;
+	
+    gl_Position = projectionMatrix*modelViewMatrix*vPosition;
+	
+	vTexCoord = texCoord;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+varying vec3 normalInterp;  // Surface normal
+varying vec3 vertPos;       // Vertex position
+varying highp vec2 vTexCoord;
+
+uniform sampler2D sampler;
+
+// Material color
+uniform vec3 ambientColor;
+uniform vec3 diffuseColor;
+uniform vec3 specularColor;
+uniform vec3 lightPos; // Light position
+
+uniform float Ka;   // Ambient reflection
+uniform float Kd;   // Diffuse reflection
+uniform float Ks;   // Specular reflection
+uniform float shininessVal; // Shininess
+
+void main() {
+  vec3 N = normalize(normalInterp);
+  vec3 L = normalize(lightPos - vertPos);
+
+  float lambertian = dot(N, L);
+  float specular = 0.0;
+  if(lambertian > 0.0) {
+    vec3 R = reflect(-L, N);      // Reflected light
+    vec3 V = normalize(-vertPos); // Vector to camera
+	
+    float specAngle = dot(R, V);
+    specular = pow(specAngle, shininessVal);
+  }
+  
+  vec4 texColor = texture2D(sampler, vTexCoord);
+  
+  gl_FragColor = vec4(Ka * ambientColor * texColor.rgb+
+                      Kd * lambertian * diffuseColor * texColor.rgb +
+                      Ks * specular * specularColor, 1.0);
+  
+  //gl_FragColor = vec4(N * 0.5 + 0.5, 1.0);
+}
+</script>
+
+<p> </p>
+<!--<button id = "XButton">Rotate around X</button>
+<button id = "YButton">Rotate around Y</button>
+<button id = "ZButton">Rotate around Z</button>-->
+<div id="horizontalBlock">
+<label for="wireframe"> Show wireframe </label>
+<input type="checkbox" id = "wireframe">
+<label for="shininess"> Shininess </label>
+<input type="range" id="shininess" min="0" max="100" value="50">
+<label for="rotS"> Rotate </label>
+<select id="rotS">
+	<option value="0">Object</option>
+	<option value="1">Light</option>
+</select>
+<p>You can rotate object or light by dragging your cursor</p>
+</div>
+<br>
+<div id="horizontalBlock">
+<label for="ambColor"> Ambient color </label>
+<input type="color" id = "ambColor" value="#c8d6e5">
+<label for="ambMult"> Ambient reflection </label>
+<input type="range" id="ambMult" min="0" max="100" value="40">
+</div>
+<br>
+<div id="horizontalBlock">
+<label for="diffColor"> Diffuse color </label>
+<input type="color" id = "diffColor" value="#feca57">
+<label for="difMult"> Diffuse reflection </label>
+<input type="range" id="difMult" min="0" max="100" value="100">
+</div>
+<br>
+<div id="horizontalBlock">
+<label for="specColor"> Specular color </label>
+<input type="color" id = "specColor" value="#ffffff">
+<label for="specMult"> Specular reflection </label>
+<input type="range" id="specMult" min="0" max="100" value="100">
+</div>
+<!--<input type="file" id="objTexture" accept="image/png, image/jpeg, image/jpg">-->
+<p> </p>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="initShaders.js"></script>
+<script type="text/javascript" src="MV.js"></script>
+<script type="text/javascript" src="phong_rendering.js"></script>
+
+<body>
+<div id="InputArea">
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</div>
+</body>
+</html>
